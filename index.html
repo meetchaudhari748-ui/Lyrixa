@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>LYRIXA — AI Content Studio</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+</head>
+<body style="margin:0;background:#000;">
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+
+
+const INDIAN_LANGS = ["Hindi","Hinglish","Bengali","Telugu","Marathi","Tamil","Gujarati","Kannada","Malayalam","Odia","Punjabi","Assamese","Maithili","Urdu","Konkani","Manipuri","Nepali","Sindhi","Bodo","Dogri","Kashmiri","Santali","Rajasthani","Bhojpuri","Haryanvi","Chhattisgarhi","Tulu","Sanskrit"];
+const WORLD_LANGS = ["English","Spanish","French","Arabic","Portuguese","Russian","Japanese","Korean","Chinese (Mandarin)","German","Italian","Turkish","Dutch","Polish","Swedish","Norwegian","Danish","Finnish","Greek","Hebrew","Persian","Swahili","Hausa","Yoruba","Amharic","Indonesian","Malay","Thai","Vietnamese","Tagalog","Burmese","Mongolian","Ukrainian","Romanian","Hungarian","Czech","Serbian","Croatian","Azerbaijani","Uzbek","Kazakh","Zulu","Somali","Pashto","Sinhala","Tibetan"];
+
+const TOOLS = [
+  {
+    id:"lyrics", emoji:"🎵", label:"Song Lyrics",
+    placeholder:"Topic — dard, pyaar, breakup, hustle, zindagi...",
+    moods:["Sad 💔","Happy 🎉","Romantic 💕","Angry 😤","Motivational 🔥","Devotional 🙏","Party 🎊","Chill 😎"],
+    prompt:(inp,mood,lang)=>`You are a world-class professional songwriter fluent in ${lang}. Write a COMPLETE, emotionally powerful song in ${lang} about: "${inp}". Mood: ${mood}. Structure with [Verse 1] [Pre-Chorus] [Chorus] [Verse 2] [Bridge] [Outro]. Use authentic ${lang} expressions, vivid imagery. Make chorus very catchy. Use native script of ${lang}.`
+  },
+  {
+    id:"rap", emoji:"🎤", label:"Rap Hook",
+    placeholder:"Theme — streets, hustle, love, money, flex...",
+    moods:["Desi Trap 🔱","Old School 📻","Drill 🥁","Boom Bap 🎧","Lo-Fi 🌙","Gangsta 💎"],
+    prompt:(inp,mood,lang)=>`You are a legendary rap songwriter fluent in ${lang}. Write a HARD-HITTING rap in ${lang} about: "${inp}". Style: ${mood}. Include [Hook] (4-8 bars), [Verse 1] (16 bars with wordplay), [Hook repeat], [Verse 2] (16 bars). Use internal rhymes, punchlines, flow markers (2x). Native script. Make it fire.`
+  },
+  {
+    id:"caption", emoji:"📱", label:"Social Caption",
+    placeholder:"Post — gym, travel, food, business, reel...",
+    moods:["Viral ⚡","Aesthetic ✨","Funny 😂","Motivational 💪","Business 💼","Romantic 🌹"],
+    prompt:(inp,mood,lang)=>`You are a viral social media expert fluent in ${lang}. Write 3 SCROLL-STOPPING captions in ${lang} for: "${inp}". Vibe: ${mood}. Each: strong hook, 2-3 lines, CTA, 8 hashtags. Label as Option 1, 2, 3. Authentic ${lang}, not robotic.`
+  },
+  {
+    id:"ad", emoji:"📢", label:"Ad Copy",
+    placeholder:"Product/Brand — chai, mobile, clothing, app...",
+    moods:["Instagram Ad 📸","YouTube Ad 🎬","WhatsApp 💬","Billboard 🖼️","Radio 📻","Email 📧"],
+    prompt:(inp,mood,lang)=>`You are an award-winning copywriter fluent in ${lang}. Write HIGH-CONVERTING ad copy in ${lang} for: "${inp}". Format: ${mood}. Include: 1 explosive headline, emotional subheadline, 3 body copy lines, irresistible CTA, memorable tagline. Emotional and conversion-focused.`
+  },
+  {
+    id:"poem", emoji:"✍️", label:"Poem / Shayari",
+    placeholder:"Feeling — ishq, zindagi, nature, success...",
+    moods:["Romantic 💕","Philosophical 🌌","Sad 💧","Inspirational ⭐","Humorous 😄","Spiritual 🕊️"],
+    prompt:(inp,mood,lang)=>`You are a celebrated poet fluent in ${lang}. Write a BEAUTIFUL deeply moving poem in ${lang} about: "${inp}". Tone: ${mood}. If Hindi/Urdu use shayari style with radeef-kaafiya. 3-4 stanzas, powerful closing couplet. Native script. Every line memorable.`
+  },
+  {
+    id:"story", emoji:"📖", label:"Story / Script",
+    placeholder:"Story — romance, thriller, comedy, drama...",
+    moods:["Short Film 🎬","Reel Script 📱","YouTube Script 🎥","Podcast 🎙️","Comic 💬"],
+    prompt:(inp,mood,lang)=>`You are a professional screenwriter fluent in ${lang}. Write a COMPELLING ${mood} in ${lang} about: "${inp}". Include: hook opening, character intro, rising tension, emotional peak, resolution. Natural dialogue, cinematic pacing. Native script.`
+  },
+];
+
+const PLANS = [
+  { name:"FREE", code:"F-00", color:"#4a4a8a", price:"₹0", sub:"Forever",
+    badge:null, popular:false, cta:"START FREE",
+    features:["5 generations / day","3 tools only","10 languages","Watermark on output","No AI Voice","Basic quality"] },
+  { name:"STARTER", code:"S-01", color:"#3b82f6", price:"₹159", sub:"/month",
+    badge:null, popular:false, cta:"ACTIVATE",
+    features:["30 generations / month","All 6 tools","All 28 Indian languages","AI Voice Preview 🎤","No watermark","Email support"] },
+  { name:"CREATOR", code:"C-02", color:"#f7931a", price:"₹449", sub:"/month",
+    badge:"🔥 MOST POPULAR", popular:true, cta:"GO CREATOR",
+    features:["100 generations / month","All 6 tools + early access","ALL 70+ world languages","AI Voice + mood tunes 🎵","Save & export history","2x faster","Priority support"] },
+  { name:"PRO", code:"P-03", color:"#a855f7", price:"₹1499", sub:"/month",
+    badge:"💎 BEST VALUE", popular:false, cta:"GO PRO",
+    features:["Unlimited generations","All tools + beta","All languages + custom","AI Voice + bg music 🎼","Brand voice custom","API access","Dedicated support"] },
+];
+
+// ─── GLOBAL CSS ────────────────────────────────────────────────────────────
+const CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800;900&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:#000;overflow-x:hidden;}
+::-webkit-scrollbar{width:3px;}
+::-webkit-scrollbar-thumb{background:linear-gradient(#f7931a,#a855f7);}
+
+@keyframes glitch1{0%,100%{clip-path:inset(0 0 95% 0);transform:translate(-2px,0);}25%{clip-path:inset(40% 0 40% 0);transform:translate(2px,0);}50%{clip-path:inset(70% 0 10% 0);transform:translate(-1px,0);}75%{clip-path:inset(20% 0 60% 0);transform:translate(1px,0);}}
+@keyframes glitch2{0%,100%{clip-path:inset(80% 0 5% 0);transform:translate(2px,0);}25%{clip-path:inset(15% 0 55% 0);transform:translate(-2px,0);}50%{clip-path:inset(50% 0 25% 0);transform:translate(1px,0);}75%{clip-path:inset(5% 0 80% 0);transform:translate(-1px,0);}}
+@keyframes scanline{0%{top:-5%;}100%{top:105%;}}
+@keyframes neonP{0%,100%{box-shadow:0 0 10px #f7931a66,0 0 20px #f7931a33;}50%{box-shadow:0 0 20px #f7931a,0 0 40px #f7931a88,0 0 80px #f7931a44;}}
+@keyframes gridScroll{0%{background-position:0 0;}100%{background-position:0 60px;}}
+@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
+@keyframes spin{to{transform:rotate(360deg);}}
+@keyframes spinR{to{transform:rotate(-360deg);}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+@keyframes wave{0%,100%{transform:scaleY(.3);}50%{transform:scaleY(1);}}
+@keyframes particleDrift{0%{transform:translateY(0) translateX(0);opacity:1;}100%{transform:translateY(-100px) translateX(var(--dx,0px));opacity:0;}}
+@keyframes dataFall{0%{transform:translateY(-100%);opacity:0;}5%{opacity:.7;}95%{opacity:.7;}100%{transform:translateY(100vh);opacity:0;}}
+@keyframes borderFlow{0%{background-position:0% 50%;}100%{background-position:200% 50%;}}
+@keyframes pulse{0%,100%{opacity:.5;}50%{opacity:1;}}
+@keyframes ripple{0%{transform:scale(1);opacity:.6;}100%{transform:scale(2.5);opacity:0;}}
+@keyframes gradShift{0%{background-position:0% 50%;}50%{background-position:100% 50%;}100%{background-position:0% 50%;}}
+
+.glitch{position:relative;display:inline-block;}
+.glitch::before,.glitch::after{content:attr(data-text);position:absolute;top:0;left:0;width:100%;height:100%;}
+.glitch::before{color:#f7931a88;animation:glitch1 2.5s infinite;}
+.glitch::after{color:#a855f788;animation:glitch2 2.5s infinite;}
+
+.grad-text{
+  background:linear-gradient(135deg,#f7931a,#ff5c00,#a855f7,#f7931a);
+  background-size:300%;animation:gradShift 4s ease infinite;
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+
+.btn-primary{
+  background:linear-gradient(135deg,#f7931a,#ff5c00);
+  border:none;color:#000;font-family:'Orbitron',sans-serif;
+  font-weight:800;cursor:pointer;letter-spacing:2px;
+  text-transform:uppercase;transition:all .25s;
+}
+.btn-primary:hover{box-shadow:0 0 30px #f7931a88,0 0 60px #f7931a44;transform:translateY(-2px);}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none;}
+
+.btn-outline{
+  background:transparent;border:1px solid #f7931a;
+  color:#f7931a;font-family:'Orbitron',sans-serif;
+  font-weight:700;cursor:pointer;letter-spacing:2px;
+  text-transform:uppercase;transition:all .25s;
+}
+.btn-outline:hover{background:#f7931a18;box-shadow:0 0 20px #f7931a44;}
+
+.cyber-card{
+  background:#05050e;border:1px solid #f7931a22;
+  border-radius:14px;position:relative;overflow:hidden;transition:all .3s;
+}
+.cyber-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,#f7931a66,transparent);}
+.cyber-card:hover{border-color:#f7931a55;box-shadow:0 0 30px #f7931a0d;}
+
+.nav-tab{
+  background:transparent;border:1px solid transparent;
+  color:#444466;font-family:'Orbitron',sans-serif;
+  font-size:11px;font-weight:700;letter-spacing:2px;
+  cursor:pointer;text-transform:uppercase;transition:all .2s;
+  border-radius:6px;padding:8px 14px;
+}
+.nav-tab:hover{color:#f7931a;border-color:#f7931a33;}
+.nav-tab.active{color:#f7931a;border-color:#f7931a55;background:#f7931a0d;}
+
+.tool-tab{
+  background:transparent;border:1px solid #1a1a30;
+  color:#333355;border-radius:8px;cursor:pointer;
+  font-family:'Orbitron',sans-serif;font-size:10px;
+  font-weight:700;letter-spacing:1px;text-transform:uppercase;
+  transition:all .2s;white-space:nowrap;padding:8px 14px;
+}
+.tool-tab:hover{border-color:#f7931a44;color:#f7931a88;}
+.tool-tab.active{background:#f7931a15;border-color:#f7931a;color:#f7931a;}
+
+.mood-chip{
+  padding:6px 13px;border-radius:6px;font-family:'Share Tech Mono',monospace;
+  font-size:11px;cursor:pointer;transition:all .15s;border:1px solid;
+}
+.mood-chip.on{border-color:#f7931a;background:#f7931a18;color:#f7931a;}
+.mood-chip.off{border-color:#1a1a30;background:transparent;color:#333355;}
+
+textarea,input{
+  background:#02020a;border:1px solid #1a1a30;border-radius:10px;
+  color:#e8e0d5;font-family:'Rajdhani',sans-serif;font-size:15px;
+  padding:13px 16px;width:100%;outline:none;transition:border .2s;resize:none;
+}
+textarea:focus,input:focus{border-color:#f7931a55;}
+::placeholder{color:#1e1e38;}
+
+.lang-item{padding:8px 12px;border-radius:6px;cursor:pointer;
+  font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:500;
+  transition:all .15s;color:#555577;}
+.lang-item:hover{background:#f7931a0d;color:#f7931a;}
+.lang-item.sel{background:#f7931a18;color:#f7931a;font-weight:700;}
+.lang-scroll{max-height:180px;overflow-y:auto;padding:6px;}
+.lang-scroll::-webkit-scrollbar{width:2px;}
+.lang-scroll::-webkit-scrollbar-thumb{background:#f7931a;}
+
+.wbar{display:inline-block;width:3px;border-radius:2px;margin:0 1.5px;
+  animation:wave .6s ease-in-out infinite;
+  background:linear-gradient(#f7931a,#a855f7);}
+
+.fade-up{animation:fadeUp .5s ease both;}
+`;
+
+// ─── BACKGROUND ──────────────────────────────────────────────────────────
+function BG() {
+  const particles = Array.from({length:15},(_,i)=>({
+    id:i, left:`${5+i*6.5}%`,
+    delay:`${i*.4}s`, dur:`${3+i*.3}s`,
+    size:i%3===0?3:2,
+    dx:`${(i%2===0?1:-1)*40}px`,
+    color:i%2===0?"#f7931a":"#a855f7",
+  }));
+  return (
+    <>
+      {/* Grid */}
+      <div style={{position:"fixed",inset:0,zIndex:0,pointerEvents:"none",
+        backgroundImage:"linear-gradient(rgba(247,147,26,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(247,147,26,.05) 1px,transparent 1px)",
+        backgroundSize:"60px 60px",animation:"gridScroll 3s linear infinite"}}/>
+      {/* Glow spots */}
+      <div style={{position:"fixed",top:"-10%",left:"-10%",width:"50%",height:"50%",
+        background:"radial-gradient(circle,#f7931a09,transparent 60%)",pointerEvents:"none",zIndex:0}}/>
+      <div style={{position:"fixed",bottom:"-10%",right:"-10%",width:"50%",height:"50%",
+        background:"radial-gradient(circle,#a855f709,transparent 60%)",pointerEvents:"none",zIndex:0}}/>
+      {/* Scanline */}
+      <div style={{position:"fixed",left:0,right:0,height:2,
+        background:"linear-gradient(transparent,#f7931a18,transparent)",
+        animation:"scanline 5s linear infinite",zIndex:9999,pointerEvents:"none"}}/>
+      {/* Particles */}
+      {particles.map(p=>(
+        <div key={p.id} style={{position:"fixed",bottom:"-5%",left:p.left,
+          width:p.size,height:p.size,borderRadius:"50%",
+          background:p.color,boxShadow:`0 0 6px ${p.color}`,
+          animation:`particleDrift ${p.dur} ease-in infinite`,
+          animationDelay:p.delay,"--dx":p.dx,
+          pointerEvents:"none",zIndex:1}}/>
+      ))}
+    </>
+  );
+}
+
+// ─── NAV ─────────────────────────────────────────────────────────────────
+function Nav({page, go}) {
+  return (
+    <nav style={{position:"sticky",top:0,zIndex:100,
+      background:"rgba(0,0,0,.85)",backdropFilter:"blur(20px)",
+      borderBottom:"1px solid #f7931a18",padding:"0 20px",
+      display:"flex",alignItems:"center",justifyContent:"space-between",height:60}}>
+      <div onClick={()=>go("home")} style={{
+        fontFamily:"'Orbitron',sans-serif",fontSize:20,fontWeight:900,
+        letterSpacing:4,cursor:"pointer",
+        background:"linear-gradient(135deg,#f7931a,#a855f7)",
+        WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",
+      }}>LYRIXA</div>
+      <div style={{display:"flex",gap:6,alignItems:"center"}}>
+        {[["home","HOME"],["studio","STUDIO"],["pricing","PLANS"]].map(([p,l])=>(
+          <button key={p} className={`nav-tab ${page===p?"active":""}`} onClick={()=>go(p)}>{l}</button>
+        ))}
+        <button className="btn-primary" onClick={()=>go("studio")}
+          style={{padding:"8px 18px",fontSize:10,borderRadius:8}}>
+          TRY FREE ▶
+        </button>
+      </div>
+    </nav>
+  );
+}
+
+// ─── HOME ─────────────────────────────────────────────────────────────────
+function Home({go}) {
+  const [tagIdx,setTagIdx] = useState(0);
+  const tags = ["CREATE. SING. DOMINATE.","WORDS ARE YOUR WEAPON.","YOUR VOICE. ANY LANGUAGE.","BORN FROM SOUND. BUILT BY AI."];
+  useEffect(()=>{const t=setInterval(()=>setTagIdx(i=>(i+1)%tags.length),3000);return()=>clearInterval(t);},[]);
+
+  const FEATS=[
+    {i:"🌍",t:"70+ Languages",d:"Hindi se Japanese tak, Arabic se Spanish tak — har bhaasha mein"},
+    {i:"🎵",t:"AI Voice Singer",d:"Generate karo, phir AI se mood ke hisaab se sunvao"},
+    {i:"⚡",t:"6 AI Tools",d:"Lyrics, Rap, Caption, Ad Copy, Poem, Story — sab"},
+    {i:"🔥",t:"Viral Output",d:"Instagram, YouTube, Spotify ke liye directly ready"},
+    {i:"💎",t:"Brand Voice",d:"Apna style set karo — har output consistent rahe"},
+    {i:"🚀",t:"30 Sec Results",d:"Professional content — seconds mein, zero effort"},
+  ];
+
+  return (
+    <div style={{fontFamily:"'Rajdhani',sans-serif"}}>
+      {/* HERO */}
+      <div style={{minHeight:"90vh",display:"flex",flexDirection:"column",
+        alignItems:"center",justifyContent:"center",
+        textAlign:"center",padding:"60px 20px",position:"relative",zIndex:5}}>
+
+        {/* Rings */}
+        <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",
+          pointerEvents:"none",zIndex:0}}>
+          {[220,320,420].map((s,i)=>(
+            <div key={i} style={{position:"absolute",width:s,height:s,
+              top:"50%",left:"50%",marginTop:-s/2,marginLeft:-s/2,
+              border:`1px solid rgba(247,147,26,${.12-i*.03})`,borderRadius:"50%",
+              animation:`${i%2?"spinR":"spin"} ${18+i*8}s linear infinite`}}>
+              <div style={{position:"absolute",top:-3,left:"50%",marginLeft:-3,
+                width:6,height:6,borderRadius:"50%",background:"#f7931a",
+                boxShadow:"0 0 10px #f7931a,0 0 20px #f7931a"}}/>
+            </div>
+          ))}
+        </div>
+
+        {/* Badge */}
+        <div className="fade-up" style={{marginBottom:28,position:"relative",zIndex:2}}>
+          <span style={{fontFamily:"'Share Tech Mono',monospace",fontSize:10,letterSpacing:4,
+            color:"#f7931a",border:"1px solid #f7931a44",borderRadius:4,
+            padding:"6px 18px",textTransform:"uppercase",background:"#f7931a08"}}>
+            ▶ SYSTEM ONLINE // AI CONTENT STUDIO
+          </span>
+        </div>
+
+        {/* Logo icon */}
+        <div className="fade-up" style={{marginBottom:24,position:"relative",zIndex:2,animationDelay:".1s",animation:"float 3s ease-in-out infinite"}}>
+          <div style={{position:"relative"}}>
+            <div style={{position:"absolute",inset:-12,borderRadius:"50%",
+              border:"1px solid #f7931a33",animation:"ripple 2s ease-out infinite"}}/>
+            <div style={{width:80,height:80,borderRadius:22,
+              background:"linear-gradient(135deg,#f7931a,#ff5c00,#a855f7)",
+              display:"flex",alignItems:"center",justifyContent:"center",
+              boxShadow:"0 0 40px #f7931a66",position:"relative",overflow:"hidden"}}>
+              <div style={{position:"absolute",inset:0,background:"linear-gradient(135deg,rgba(255,255,255,.2),transparent 50%)"}}/>
+              <div style={{display:"flex",alignItems:"center",gap:3,zIndex:1}}>
+                {[.5,1,1.6,1,1.6,1,.5].map((h,i)=>(
+                  <div key={i} style={{width:3,height:h*24,borderRadius:2,
+                    background:"rgba(255,255,255,.95)",
+                    animation:`wave ${.5+i*.07}s ease-in-out infinite`,
+                    animationDelay:`${i*.05}s`}}/>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Title */}
+        <div className="fade-up" style={{marginBottom:16,position:"relative",zIndex:2,animationDelay:".15s"}}>
+          <h1 className="glitch" data-text="LYRIXA" style={{
+            fontFamily:"'Orbitron',sans-serif",fontSize:"clamp(50px,10vw,96px)",
+            fontWeight:900,letterSpacing:12,color:"#fff",
+            textShadow:"0 0 20px #f7931a66,0 0 60px #f7931a22",lineHeight:1,
+          }}>{"LYRIXA".split("").map((c,i)=>(
+            <span key={i} style={{
+              background:i<3?"linear-gradient(180deg,#fff,#f7931a)":"linear-gradient(180deg,#a855f7,#fff)",
+              WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",
+            }}>{c}</span>
+          ))}</h1>
+          <div style={{fontFamily:"'Share Tech Mono',monospace",fontSize:11,letterSpacing:6,
+            color:"#333355",marginTop:6}}>AI CONTENT STUDIO // WORLDWIDE</div>
+        </div>
+
+        {/* Rotating tagline */}
+        <div className="fade-up" style={{marginBottom:36,minHeight:40,position:"relative",zIndex:2,animationDelay:".2s"}}>
+          <div key={tagIdx} style={{
+            fontFamily:"'Orbitron',sans-serif",fontSize:"clamp(12px,2.5vw,20px)",
+            fontWeight:700,letterSpacing:3,textTransform:"uppercase",
+            animation:"fadeUp .35s ease",
+            background:"linear-gradient(135deg,#f7931a,#a855f7)",
+            WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",
+          }}>{tags[tagIdx]}</div>
+        </div>
+
+        {/* CTAs */}
+        <div className="fade-up" style={{display:"flex",gap:14,flexWrap:"wrap",
+          justifyContent:"center",marginBottom:56,position:"relative",zIndex:2,animationDelay:".3s"}}>
+          <button className="btn-primary" onClick={()=>go("studio")}
+            style={{padding:"14px 32px",fontSize:13,borderRadius:10}}>▶ OPEN STUDIO FREE</button>
+          <button className="btn-outline" onClick={()=>go("pricing")}
+            style={{padding:"14px 26px",fontSize:12,borderRadius:10}}>VIEW PLANS →</button>
+        </div>
+
+        {/* Stats */}
+        <div className="fade-up" style={{display:"flex",border:"1px solid #f7931a18",
+          borderRadius:12,overflow:"hidden",background:"#02020a",
+          position:"relative",zIndex:2,animationDelay:".4s"}}>
+          {[["70+","LANGUAGES"],["6","AI TOOLS"],["4","PLANS"],["₹0","TO START"]].map(([v,l],i)=>(
+            <div key={i} style={{padding:"16px 24px",textAlign:"center",
+              borderRight:i<3?"1px solid #f7931a0d":"none"}}>
+              <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:26,fontWeight:800,
+                color:"#f7931a",textShadow:"0 0 15px #f7931a66"}}>{v}</div>
+              <div style={{fontFamily:"'Share Tech Mono',monospace",fontSize:9,
+                color:"#2a2a4a",letterSpacing:2,marginTop:2}}>{l}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* FEATURES */}
+      <div style={{padding:"60px 20px",maxWidth:960,margin:"0 auto",position:"relative",zIndex:5}}>
+        <div style={{textAlign:"center",marginBottom:44}}>
+          <div style={{fontFamily:"'Share Tech Mono',monospace",fontSize:10,color:"#f7931a88",
+            letterSpacing:4,marginBottom:8}}>// CAPABILITIES</div>
+          <h2 style={{fontFamily:"'Orbitron',sans-serif",fontSize:"clamp(20px,4vw,32px)",
+            fontWeight:700,letterSpacing:3,color:"#e8e0d5"}}>
+            SAB KUCH <span style={{color:"#f7931a"}}>EK JAGAH</span>
+          </h2>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:16}}>
+          {FEATS.map((f,i)=>(
+            <div key={i} className="cyber-card fade-up" style={{padding:"26px 22px",animationDelay:`${i*.07}s`}}>
+              <div style={{fontSize:28,marginBottom:12}}>{f.i}</div>
+              <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:14,color:"#e8e0d5",
+                fontWeight:700,letterSpacing:1,marginBottom:8}}>{f.t}</div>
+              <div style={{fontFamily:"'Rajdhani',sans-serif",color:"#444466",fontSize:14,
+                lineHeight:1.6,fontWeight:500}}>{f.d}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* CTA BANNER */}
+      <div style={{padding:"0 20px 80px",position:"relative",zIndex:5}}>
+        <div style={{maxWidth:640,margin:"0 auto",
+          background:"linear-gradient(135deg,#f7931a0d,#a855f70d)",
+          border:"1px solid #f7931a22",borderRadius:20,
+          padding:"50px 36px",textAlign:"center"}}>
+          <h2 style={{fontFamily:"'Orbitron',sans-serif",fontSize:"clamp(20px,4vw,32px)",
+            fontWeight:800,letterSpacing:2,color:"#e8e0d5",marginBottom:10}}>
+            ABHI SHURU KARO
+          </h2>
+          <p style={{fontFamily:"'Rajdhani',sans-serif",color:"#444466",fontSize:15,
+            marginBottom:28,letterSpacing:1}}>No credit card. No setup. 5 free generations rozaana.</p>
+          <button className="btn-primary" onClick={()=>go("studio")}
+            style={{padding:"14px 36px",fontSize:13,borderRadius:10}}>
+            ▶ ENTER STUDIO — FREE
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── LANGUAGE PICKER ──────────────────────────────────────────────────────
+function LangPicker({value, onChange}) {
+  const [open,setOpen]=useState(false);
+  const [q,setQ]=useState("");
+  const allI=INDIAN_LANGS.filter(l=>l.toLowerCase().includes(q.toLowerCase()));
+  const allW=WORLD_LANGS.filter(l=>l.toLowerCase().includes(q.toLowerCase()));
+  return (
+    <div style={{position:"relative",zIndex:30}}>
+      <button onClick={()=>setOpen(o=>!o)} style={{
+        width:"100%",background:"#02020a",border:"1px solid #1a1a30",borderRadius:10,
+        color:"#e8e0d5",padding:"12px 16px",cursor:"pointer",
+        fontFamily:"'Rajdhani',sans-serif",fontSize:15,fontWeight:600,
+        display:"flex",justifyContent:"space-between",alignItems:"center",
+        transition:"border .2s",
+      }}>
+        <span>🌐 {value}</span>
+        <span style={{color:"#333355",fontSize:12}}>{open?"▲":"▼"}</span>
+      </button>
+      {open&&(
+        <div style={{position:"absolute",top:"calc(100% + 6px)",left:0,right:0,
+          background:"#05050e",border:"1px solid #1a1a30",borderRadius:12,
+          padding:10,zIndex:50,boxShadow:"0 20px 60px #000"}}>
+          <input placeholder="Search language..." value={q}
+            onChange={e=>setQ(e.target.value)} style={{marginBottom:8,fontSize:13}}/>
+          <div className="lang-scroll">
+            {allI.length>0&&<>
+              <div style={{fontFamily:"'Share Tech Mono',monospace",fontSize:9,color:"#222244",
+                letterSpacing:3,padding:"4px 10px",textTransform:"uppercase"}}>🇮🇳 Indian</div>
+              {allI.map(l=>(
+                <div key={l} className={`lang-item ${value===l?"sel":""}`}
+                  onClick={()=>{onChange(l);setOpen(false);setQ("");}}>
+                  {l}
+                </div>
+              ))}
+            </>}
+            {allW.length>0&&<>
+              <div style={{fontFamily:"'Share Tech Mono',monospace",fontSize:9,color:"#222244",
+                letterSpacing:3,padding:"8px 10px 4px",textTransform:"uppercase"}}>🌍 World</div>
+              {allW.map(l=>(
+                <div key={l} className={`lang-item ${value===l?"sel":""}`}
+                  onClick={()=>{onChange(l);setOpen(false);setQ("");}}>
+                  {l}
+                </div>
+              ))}
+            </>}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── STUDIO ───────────────────────────────────────────────────────────────
+function Studio() {
+  const [tool,setTool]=useState(0);
+  const [input,setInput]=useState("");
+  const [mood,setMood]=useState(TOOLS[0].moods[0]);
+  const [lang,setLang]=useState("Hindi");
+  const [output,setOutput]=useState("");
+  const [loading,setLoading]=useState(false);
+  const [singing,setSinging]=useState(false);
+  const [copied,setCopied]=useState(false);
+  const [used,setUsed]=useState(0);
+  const FREE=5;
+  const T=TOOLS[tool];
+
+  const switchTool=i=>{setTool(i);setInput("");setMood(TOOLS[i].moods[0]);setOutput("");window.speechSynthesis?.cancel();setSinging(false);};
+
+  const generate=async()=>{
+    if(!input.trim())return;
+    if(used>=FREE){setOutput("⚠️ Free limit (5/day) khatam! Starter plan lo — sirf ₹159/month. Unlimited access milega.");return;}
+    setLoading(true);setOutput("");setSinging(false);window.speechSynthesis?.cancel();
+    try{
+      const res=await fetch("https://openrouter.ai/api/v1/chat/completions",{
+        method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer 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"},
+        body:JSON.stringify({model:"meta-llama/llama-3-70b-instruct",max_tokens:1000,
+          messages:[{role:"user",content:T.prompt(input,mood,lang)}]}),
+      });
+      const data=await res.json();
+      setOutput(data.choices?.[0]?.message?.content||"Error aaya, retry karo.");
+      setUsed(u=>u+1);
+    }catch{setOutput("❌ Connection error. Internet check karo.");}
+    setLoading(false);
+  };
+
+  const sing=()=>{
+    if(!output||output.startsWith("⚠️")||output.startsWith("❌"))return;
+    if(!("speechSynthesis" in window)){alert("Chrome ya Edge browser use karo — voice support chahiye!");return;}
+    if(singing){window.speechSynthesis.cancel();setSinging(false);return;}
+    window.speechSynthesis.cancel();
+    setSinging(true);
+    const moodMap={"Sad 💔":{r:.72,p:.75},"Happy 🎉":{r:1.05,p:1.35},"Romantic 💕":{r:.8,p:1.1},"Angry 😤":{r:1.15,p:.6},"Motivational 🔥":{r:1.0,p:1.25},"Devotional 🙏":{r:.65,p:.85},"Party 🎊":{r:1.1,p:1.4},"Chill 😎":{r:.75,p:1.0}};
+    const m=moodMap[mood]||{r:.9,p:1.0};
+    const doSpeak=(voices)=>{
+      const u=new SpeechSynthesisUtterance(output.replace(/\[.*?\]/g,"").slice(0,700));
+      u.rate=m.r; u.pitch=m.p; u.volume=1;
+      if(voices&&voices.length){
+        const pick=voices.find(v=>v.lang==="hi-IN")||voices.find(v=>v.lang.startsWith("hi"))||voices.find(v=>v.lang==="en-IN")||voices.find(v=>v.lang.startsWith("en"))||voices[0];
+        if(pick)u.voice=pick;
+      }
+      u.onend=()=>setSinging(false);
+      u.onerror=()=>setSinging(false);
+      window.speechSynthesis.speak(u);
+    };
+    // try immediately first
+    const voices=window.speechSynthesis.getVoices();
+    if(voices&&voices.length>0){doSpeak(voices);}
+    else{
+      // wait for voices to load
+      window.speechSynthesis.onvoiceschanged=()=>{
+        doSpeak(window.speechSynthesis.getVoices());
+        window.speechSynthesis.onvoiceschanged=null;
+      };
+      // also try after short delay as fallback
+      setTimeout(()=>{
+        const v2=window.speechSynthesis.getVoices();
+        doSpeak(v2);
+      },300);
+    }
+  };
+
+  const copy=()=>{navigator.clipboard.writeText(output);setCopied(true);setTimeout(()=>setCopied(false),2000);};
+
+  return (
+    <div style={{maxWidth:760,margin:"0 auto",padding:"32px 16px 60px",
+      position:"relative",zIndex:5,fontFamily:"'Rajdhani',sans-serif"}}>
+
+      {/* Header */}
+      <div style={{textAlign:"center",marginBottom:28}}>
+        <div style={{fontFamily:"'Share Tech Mono',monospace",fontSize:10,color:"#f7931a88",
+          letterSpacing:4,marginBottom:6}}>// AI CONTENT GENERATOR</div>
+        <h1 style={{fontFamily:"'Orbitron',sans-serif",fontSize:"clamp(22px,5vw,38px)",
+          fontWeight:800,letterSpacing:3,color:"#e8e0d5",marginBottom:10}}>
+          CONTENT <span style={{color:"#f7931a"}}>STUDIO</span>
+        </h1>
+        {/* Usage bar */}
+        <p style={{fontFamily:"'Share Tech Mono',monospace",fontSize:10,color:"#333355",
+          letterSpacing:2,marginBottom:8}}>{FREE-used} FREE GENERATIONS REMAINING TODAY</p>
+        <div style={{display:"flex",gap:5,justifyContent:"center"}}>
+          {Array.from({length:FREE}).map((_,i)=>(
+            <div key={i} style={{width:30,height:3,borderRadius:2,
+              background:i<used?"#f7931a":"#1a1a30",transition:"background .3s"}}/>
+          ))}
+        </div>
+      </div>
+
+      {/* Tool tabs */}
+      <div style={{display:"flex",gap:6,marginBottom:20,overflowX:"auto",paddingBottom:4}}>
+        {TOOLS.map((t,i)=>(
+          <button key={t.id} className={`tool-tab ${tool===i?"active":""}`} onClick={()=>switchTool(i)}>
+            {t.emoji} {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Input card */}
+      <div className="cyber-card" style={{padding:"22px 20px",marginBottom:14}}>
+        {/* Language */}
+        <div style={{fontFamily:"'Share Tech Mono',monospace",fontSize:9,color:"#f7931a88",
+          letterSpacing:3,textTransform:"uppercase",marginBottom:8}}>// LANGUAGE</div>
+        <div style={{marginBottom:18}}>
+          <LangPicker value={lang} onChange={setLang}/>
+        </div>
+
+        {/* Input */}
+        <div style={{fontFamily:"'Share Tech Mono',monospace",fontSize:9,color:"#f7931a88",
+          letterSpacing:3,textTransform:"uppercase",marginBottom:8}}>// TOPIC / IDEA</div>
+        <textarea rows={3} placeholder={T.placeholder} value={input}
+          onChange={e=>setInput(e.target.value)}
+          onKeyDown={e=>e.key==="Enter"&&e.ctrlKey&&generate()}
+          style={{marginBottom:18}}/>
+
+        {/* Mood */}
+        <div style={{fontFamily:"'Share Tech Mono',monospace",fontSize:9,color:"#f7931a88",
+          letterSpacing:3,textTransform:"uppercase",marginBottom:8}}>// MOOD / STYLE</div>
+        <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:22}}>
+          {T.moods.map(m=>(
+            <button key={m} className={`mood-chip ${mood===m?"on":"off"}`}
+              onClick={()=>setMood(m)}>{m}</button>
+          ))}
+        </div>
+
+        {/* Generate */}
+        <button className="btn-primary" onClick={generate}
+          disabled={loading||!input.trim()}
+          style={{width:"100%",padding:"15px",fontSize:13,borderRadius:10}}>
+          {loading
+            ?<span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10}}>
+               <span style={{width:14,height:14,border:"2px solid #00000044",borderTop:"2px solid #000",
+                 borderRadius:"50%",display:"inline-block",animation:"spin 1s linear infinite"}}/>
+               GENERATING...
+             </span>
+            :`▶ GENERATE ${T.label.toUpperCase()} IN ${lang.toUpperCase()}`}
+        </button>
+        <div style={{textAlign:"center",fontFamily:"'Share Tech Mono',monospace",fontSize:9,
+          color:"#1a1a30",marginTop:6,letterSpacing:2}}>CTRL+ENTER SHORTCUT</div>
+      </div>
+
+      {/* Output card */}
+      {(output||loading)&&(
+        <div className="cyber-card fade-up" style={{padding:"22px 20px"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <span style={{fontFamily:"'Share Tech Mono',monospace",fontSize:9,
+                color:"#f7931a",letterSpacing:3}}>{T.emoji} OUTPUT // {lang.toUpperCase()}</span>
+              {singing&&(
+                <div style={{display:"flex",alignItems:"flex-end",gap:1.5,height:16}}>
+                  {[1,1.8,2.5,2,1.2].map((h,i)=>(
+                    <div key={i} className="wbar" style={{height:h*5,animationDelay:`${i*.1}s`}}/>
+                  ))}
+                </div>
+              )}
+            </div>
+            {output&&!loading&&(
+              <div style={{display:"flex",gap:8}}>
+                <button onClick={sing} style={{
+                  padding:"5px 12px",borderRadius:6,
+                  border:`1px solid ${singing?"#a855f7":"#1a1a30"}`,
+                  background:singing?"#a855f715":"transparent",
+                  color:singing?"#a855f7":"#333355",
+                  fontFamily:"'Share Tech Mono',monospace",fontSize:10,
+                  cursor:"pointer",transition:"all .2s",letterSpacing:1,
+                }}>{singing?"⏹ STOP":"🔊 AI SING"}</button>
+                <button onClick={copy} style={{
+                  padding:"5px 12px",borderRadius:6,
+                  border:"1px solid #1a1a30",background:"transparent",
+                  color:copied?"#22c55e":"#333355",
+                  fontFamily:"'Share Tech Mono',monospace",fontSize:10,
+                  cursor:"pointer",transition:"all .2s",letterSpacing:1,
+                }}>{copied?"✓ COPIED":"📋 COPY"}</button>
+              </div>
+            )}
+          </div>
+
+          {loading
+            ?<div style={{color:"#1a1a30",fontSize:13,fontFamily:"'Share Tech Mono',monospace",
+               letterSpacing:2,animation:"pulse 1.5s infinite"}}>
+               ▶ AI GENERATING CONTENT...
+             </div>
+            :<div style={{whiteSpace:"pre-wrap",lineHeight:1.9,fontSize:15,color:"#ccccdd",
+               fontFamily:"'Noto Sans Devanagari','Rajdhani',sans-serif",fontWeight:500}}>
+               {output}
+             </div>
+          }
+
+          {output&&!loading&&!output.startsWith("⚠️")&&!output.startsWith("❌")&&(
+            <div style={{marginTop:14,padding:"10px 14px",background:"#a855f70a",
+              border:"1px solid #a855f722",borderRadius:8}}>
+              <p style={{fontFamily:"'Share Tech Mono',monospace",fontSize:10,
+                color:"#a855f7",letterSpacing:1}}>
+                🔊 AI SING: Press button — AI will read output aloud in mood-matched voice!
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── PRICING ──────────────────────────────────────────────────────────────
+function Pricing({go}) {
+  return (
+    <div style={{padding:"50px 16px 80px",maxWidth:980,margin:"0 auto",
+      position:"relative",zIndex:5,fontFamily:"'Rajdhani',sans-serif"}}>
+      <div style={{textAlign:"center",marginBottom:44}}>
+        <div style={{fontFamily:"'Share Tech Mono',monospace",fontSize:10,color:"#f7931a88",
+          letterSpacing:4,marginBottom:8}}>// ACCESS LEVELS</div>
+        <h1 style={{fontFamily:"'Orbitron',sans-serif",fontSize:"clamp(20px,4vw,36px)",
+          fontWeight:800,letterSpacing:3,color:"#e8e0d5",marginBottom:10}}>
+          CHOOSE YOUR <span style={{color:"#f7931a"}}>PLAN</span>
+        </h1>
+        <p style={{fontFamily:"'Share Tech Mono',monospace",fontSize:10,
+          color:"#222244",letterSpacing:3}}>FREE SE SHURU // CANCEL ANYTIME</p>
+      </div>
+
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(210px,1fr))",gap:16}}>
+        {PLANS.map((p,i)=>(
+          <div key={p.name} className="fade-up" style={{
+            position:"relative",animationDelay:`${i*.08}s`,
+            background:p.popular?"linear-gradient(145deg,#0b0b1e,#140f1e)":"#02020a",
+            border:`1.5px solid ${p.popular?p.color+"88":p.color+"22"}`,
+            borderRadius:14,padding:"26px 18px",
+            boxShadow:p.popular?`0 0 40px ${p.color}18`:"none",
+            transition:"all .3s",
+          }}>
+            {/* Top bar */}
+            <div style={{position:"absolute",top:0,left:0,right:0,height:2,borderRadius:"14px 14px 0 0",
+              background:`linear-gradient(90deg,transparent,${p.color},transparent)`}}/>
+
+            {p.badge&&(
+              <div style={{position:"absolute",top:-11,left:"50%",transform:"translateX(-50%)",
+                background:p.popular?"linear-gradient(135deg,#f7931a,#ff5c00)":"linear-gradient(135deg,#a855f7,#7c3aed)",
+                color:"#000",borderRadius:3,padding:"3px 11px",
+                fontFamily:"'Orbitron',sans-serif",fontSize:8,fontWeight:900,
+                whiteSpace:"nowrap",letterSpacing:1}}>{p.badge}</div>
+            )}
+
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+              <span style={{fontFamily:"'Orbitron',sans-serif",fontSize:14,fontWeight:800,
+                color:p.color,letterSpacing:2}}>{p.name}</span>
+              <span style={{fontFamily:"'Share Tech Mono',monospace",fontSize:9,color:"#1a1a30",
+                border:"1px solid #1a1a30",borderRadius:3,padding:"2px 6px"}}>{p.code}</span>
+            </div>
+
+            <div style={{display:"flex",alignItems:"baseline",gap:4,marginBottom:4}}>
+              <span style={{fontFamily:"'Orbitron',sans-serif",fontSize:34,fontWeight:900,
+                color:p.color,textShadow:`0 0 15px ${p.color}55`}}>{p.price}</span>
+              <span style={{fontFamily:"'Share Tech Mono',monospace",fontSize:10,color:"#222244"}}>{p.sub}</span>
+            </div>
+
+            <div style={{height:1,background:`linear-gradient(90deg,${p.color}44,transparent)`,margin:"14px 0"}}/>
+
+            <div style={{marginBottom:20}}>
+              {p.features.map((f,j)=>(
+                <div key={j} style={{display:"flex",gap:8,alignItems:"flex-start",marginBottom:7}}>
+                  <span style={{color:p.color,flexShrink:0,fontSize:11,
+                    fontFamily:"'Share Tech Mono',monospace",marginTop:2}}>▸</span>
+                  <span style={{fontFamily:"'Rajdhani',sans-serif",fontSize:13,
+                    color:"#555577",lineHeight:1.4,fontWeight:500}}>{f}</span>
+                </div>
+              ))}
+            </div>
+
+            <button onClick={()=>go("studio")} style={{
+              width:"100%",padding:"11px",fontSize:11,borderRadius:8,
+              fontFamily:"'Orbitron',sans-serif",fontWeight:800,letterSpacing:2,
+              cursor:"pointer",transition:"all .25s",
+              background:p.popular?"linear-gradient(135deg,#f7931a,#ff5c00)":p.name==="PRO"?"linear-gradient(135deg,#a855f7,#7c3aed)":"transparent",
+              border:p.popular||p.name==="PRO"?"none":`1px solid ${p.color}`,
+              color:p.popular||p.name==="PRO"?"#000":p.color,
+            }}>{p.cta}</button>
+          </div>
+        ))}
+      </div>
+
+      <div style={{marginTop:32,textAlign:"center"}}>
+        <span style={{fontFamily:"'Share Tech Mono',monospace",fontSize:9,color:"#111128",letterSpacing:2}}>
+          ▸ RAZORPAY SECURE PAYMENT • CANCEL ANYTIME • 24/7 SUPPORT ◂
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ─── APP ──────────────────────────────────────────────────────────────────
+function App() {
+  const [page,setPage]=useState("home");
+  const go=p=>{setPage(p);window.scrollTo(0,0);};
+  return (
+    <div style={{minHeight:"100vh",background:"#000",color:"#e8e0d5",position:"relative"}}>
+      <style>{CSS}</style>
+      <BG/>
+      <Nav page={page} go={go}/>
+      {page==="home"    && <Home go={go}/>}
+      {page==="studio"  && <Studio/>}
+      {page==="pricing" && <Pricing go={go}/>}
+      <footer style={{position:"relative",zIndex:5,borderTop:"1px solid #f7931a0d",
+        padding:"20px",textAlign:"center"}}>
+        <span style={{fontFamily:"'Share Tech Mono',monospace",fontSize:9,
+          color:"#111128",letterSpacing:3}}>
+          LYRIXA // AI CONTENT STUDIO // WORLDWIDE // POWERED BY CLAUDE AI
+        </span>
+      </footer>
+    </div>
+  );
+}
+
+const { useState, useEffect } = React;
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+</script>
+</body>
+</html>
